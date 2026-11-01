@@ -1,9 +1,12 @@
-import './App.css'
+import './App.sass';
+import TaskManeger from './components/TaskManeger';
 
 function App () {
-  const [count, setCount] = useState(0)
-
-  return <></>
+  return (
+    <article>
+      <TaskManeger />
+    </article>
+  );
 }
 
-export default App
+export default App;
