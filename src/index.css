@@ -126,3 +126,8 @@ table {
 * {
   box-sizing: border-box;
 }
+
+html {
+  font-size: 16px;
+  scrollbar-gutter: stable; /* Резервує постійне місце для скролбару */
+}

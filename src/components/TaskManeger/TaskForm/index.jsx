@@ -5,6 +5,8 @@ import {connect} from 'react-redux';
 import TASKS_VALIDATION_SCHEMA from '../../../Schemas/TasksValidationSchema';
 import {createNewTask, setFilter} from '../../../store/TaskManegerSlice';
 
+import styles from './TaskForm.module.sass';
+
 const initialValues = {
   taskName: '',
 };
@@ -12,31 +14,37 @@ const initialValues = {
 function TaskForm (props) {
   const {AddNewTask, setNewFilter} = props;
 
-  function submitHandle (values) {
+  function submitHandler (values, formikBag) {
     console.log(values);
     AddNewTask(values.taskName);
-  }
-
-  function isMyFilter (filter) {
-    return filter === props.filter;
+    formikBag.resetForm();
   }
 
   return (
-    <section>
+    <section className={styles.formContainer}>
       <Formik
         initialValues={initialValues}
-        onSubmit={submitHandle}
+        onSubmit={submitHandler}
         validationSchema={TASKS_VALIDATION_SCHEMA}
       >
-        <Form>
-          <Field name={'taskName'} />
-          <button type='submit'>Add</button>
-          <ErrorMessage name={'taskName'} />
+        <Form className={styles.form}>
+          <div className={styles.fieldAndSubmitContainer}>
+            <Field
+              placeholder={'Ваша задача'}
+              name={'taskName'}
+              className={styles.taskInput}
+            />
+            <ErrorMessage
+              className={styles.errorText}
+              component={'div'}
+              name={'taskName'}
+            />
+            <button className={styles.submitBtn} type='submit'>
+              {'Додати задачу'}
+            </button>
+          </div>
         </Form>
       </Formik>
-      <button onClick={() => setNewFilter('all')}>ALL</button>
-      <button onClick={() => setNewFilter('active')}>ACTIVE</button>
-      <button onClick={() => setNewFilter('completed')}>COMPLETED</button>
     </section>
   );
 }
@@ -47,7 +55,6 @@ const mapStateToProps = state => {
 const mapDispatchToProps = dispatch => {
   return {
     AddNewTask: data => dispatch(createNewTask(data)),
-    setNewFilter: data => dispatch(setFilter(data)),
   };
 };
 
