@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {FaTrash} from 'react-icons/fa6';
 import {connect} from 'react-redux';
 import {motion, AnimatePresence} from 'framer-motion';
@@ -6,19 +6,30 @@ import {
   checkTask,
   removeTask,
   setFilter,
+  tasksThunk,
 } from '../../../store/TaskManegerSlice';
 
 import styles from './TaskList.module.sass';
 import classNames from 'classnames';
+import {div} from 'framer-motion/client';
+import {BeatLoader, PulseLoader} from 'react-spinners';
 
 function TaskList (props) {
-  const {tasks, filter, changeTaskState, setNewFilter, deleteTask} = props;
+  const {TaskManeger, changeTaskState, setNewFilter, deleteTask, LoadTasks} =
+    props;
+
+  const {tasks, filter} = TaskManeger;
+
+  useEffect(() => {
+    LoadTasks();
+  }, []);
+
   function deleteTaskHandler (id) {
     deleteTask(id);
   }
 
   function isMyFilter (filter) {
-    return filter === props.filter;
+    return filter === TaskManeger.filter;
   }
 
   function checkTaskHandler (id, checked) {
@@ -36,53 +47,63 @@ function TaskList (props) {
   }
   return (
     <section className={styles.listContainer}>
-      <ul className={styles.taskList}>
-        <AnimatePresence mode='popLayout'>
-          {sortTasks(filterTasks()).map(t => {
-            return (
-              <motion.li
-                /* Анімація появи */
-                initial={{opacity: 0, y: -20}}
-                animate={{opacity: 1, y: 0}}
-                /* Анімація при видаленні */
-                exit={{opacity: 0, scale: 0.9, transition: {duration: 0.2}}}
-                /* Налаштування пружини для переміщення */
-                transition={{
-                  type: 'spring',
-                  stiffness: 300,
-                  damping: 25,
-                }}
-                layout={'position'}
-                key={t.id}
-                className={styles.taskItem}
-              >
-                <input
-                  type='checkbox'
-                  checked={t.isDone}
-                  onChange={({target: {checked}}) =>
-                    checkTaskHandler(t.id, checked)
-                  }
-                />
-                <p
-                  title={t.name}
-                  className={classNames(styles.taskName, {
-                    [styles.completed]: t.isDone,
-                    [styles.active]: !t.isDone,
-                  })}
+      {TaskManeger.isFetching && (
+        <div style={{display: 'flex', justifyContent: 'center'}}>
+          <BeatLoader color='#ca8f0e' size={30} aria-label='Loading Spinner' />
+        </div>
+      )}
+
+      {TaskManeger.error && <div>ERROR: {TaskManeger.error}</div>}
+
+      {!TaskManeger.error && !TaskManeger.isFetching && (
+        <ul className={styles.taskList}>
+          <AnimatePresence mode='popLayout'>
+            {sortTasks(filterTasks()).map(t => {
+              return (
+                <motion.li
+                  /* Анімація появи */
+                  initial={{opacity: 0, y: -20}}
+                  animate={{opacity: 1, y: 0}}
+                  /* Анімація при видаленні */
+                  exit={{opacity: 0, scale: 0.9, transition: {duration: 0.2}}}
+                  /* Налаштування пружини для переміщення */
+                  transition={{
+                    type: 'spring',
+                    stiffness: 300,
+                    damping: 25,
+                  }}
+                  layout={'position'}
+                  key={t.id}
+                  className={styles.taskItem}
                 >
-                  {t.name}
-                </p>
-                <button
-                  className={styles.trashBtn}
-                  onClick={() => deleteTaskHandler(t.id)}
-                >
-                  <FaTrash />
-                </button>
-              </motion.li>
-            );
-          })}
-        </AnimatePresence>
-      </ul>
+                  <input
+                    type='checkbox'
+                    checked={t.isDone}
+                    onChange={({target: {checked}}) =>
+                      checkTaskHandler(t.id, checked)
+                    }
+                  />
+                  <p
+                    title={t.name}
+                    className={classNames(styles.taskName, {
+                      [styles.completed]: t.isDone,
+                      [styles.active]: !t.isDone,
+                    })}
+                  >
+                    {t.name}
+                  </p>
+                  <button
+                    className={styles.trashBtn}
+                    onClick={() => deleteTaskHandler(t.id)}
+                  >
+                    <FaTrash />
+                  </button>
+                </motion.li>
+              );
+            })}
+          </AnimatePresence>
+        </ul>
+      )}
       <div className={styles.sectionsConainer}>
         <button
           className={classNames(styles.sectionBtn, {
@@ -114,7 +135,7 @@ function TaskList (props) {
 }
 
 const mapStateToProps = state => {
-  return state.TasksManeger;
+  return {TaskManeger: state.TasksManeger, UserProfile: state.UserProfile};
 };
 
 const mapDispatchToProps = dispatch => {
@@ -123,6 +144,7 @@ const mapDispatchToProps = dispatch => {
     setNewTask: data => dispatch(createNewTask(data)),
     deleteTask: data => dispatch(removeTask(data)),
     setNewFilter: data => dispatch(setFilter(data)),
+    LoadTasks: () => dispatch(tasksThunk()),
   };
 };
 

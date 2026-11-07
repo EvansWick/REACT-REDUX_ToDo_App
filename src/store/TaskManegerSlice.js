@@ -1,6 +1,7 @@
-import {createSlice} from '@reduxjs/toolkit';
+import {createAsyncThunk, createSlice} from '@reduxjs/toolkit';
 import {act} from 'react';
 import {v4 as uuidv4} from 'uuid';
+import {axiosInstanceTasks} from '../api';
 
 const initialState = {
   tasks: [
@@ -31,13 +32,35 @@ const initialState = {
     },
   ],
   filter: 'all',
+  isFetching: false,
+  error: null,
 };
+
+export const tasksThunk = createAsyncThunk(
+  'tasks/getTasks',
+  async (_, thunkAPI) => {
+    try {
+      const {data} = await axiosInstanceTasks.get('/todos', {
+        params: {
+          _limit: 5,
+          page: 1,
+        },
+      });
+      // console.log('data :>> ', data);
+
+      return data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(err.message);
+    }
+  }
+);
 
 const tasksSlice = createSlice({
   initialState,
   name: 'taskManeger',
   reducers: {
     createNewTask: (state, {payload}) => {
+      // console.log('add new task');
       state.tasks.push({id: uuidv4(), isDone: false, name: payload});
     },
     checkTask: (state, {payload: {id, ...taskSettings}}) => {
@@ -52,6 +75,29 @@ const tasksSlice = createSlice({
       state.filter = payload;
       // console.log(payload);
     },
+  },
+  extraReducers: builder => {
+    builder.addCase(tasksThunk.pending, (state, {payload}) => {
+      console.log('tasks are loading');
+
+      state.isFetching = true;
+    });
+    builder.addCase(tasksThunk.fulfilled, (state, {payload}) => {
+      state.isFetching = false;
+      console.log('tasks loaded');
+      // Промапити дату в стан
+      state.tasks = payload.map(t => ({
+        id: uuidv4(),
+        isDone: t.completed,
+        name: t.title,
+        userId: t.userId,
+      }));
+    });
+    builder.addCase(tasksThunk.rejected, (state, {payload}) => {
+      state.isFetching = false;
+      state.error = payload;
+      console.log('Fail load tasks', payload);
+    });
   },
 });
 
